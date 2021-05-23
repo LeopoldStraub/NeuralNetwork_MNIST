@@ -1,10 +1,8 @@
-import inline as inline
-import matplotlib as matplotlib
+
 import torch
 from torch import nn
 from torch import optim
 import numpy as np
-import torch.nn.functional as F
 from torchvision import datasets, transforms
 from matplotlib import pyplot as plt
 
