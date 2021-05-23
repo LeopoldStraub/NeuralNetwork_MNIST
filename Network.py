@@ -63,11 +63,12 @@ def train_model(model_t, epochs_t, trainloader_t):
 def predict(model_p, trainloader_p):
     data_iter = iter(trainloader_p)
     images, labels = next(data_iter)
-    img = images[1].view(1, 784)
-    with torch.no_grad():
-        log_pred = model(img)
-    pred = torch.exp(log_pred)
-    view_classify(img.view(1, 28, 28), pred)
+    for i in range(15):
+        img = images[i].view(1, 784)
+        with torch.no_grad():
+            log_pred = model_p(img)
+        pred = torch.exp(log_pred)
+        view_classify(img.view(1, 28, 28), pred)
 
 
 if __name__ == '__main__':
@@ -89,7 +90,7 @@ if __name__ == '__main__':
     optimizer = optim.SGD(model.parameters(), lr=0.1)
 
     # 5 training epochs
-    epochs = 2
+    epochs = 10
 
     model = train_model(model, epochs, train_loader)
 
