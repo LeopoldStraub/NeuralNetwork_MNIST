@@ -16,4 +16,4 @@ Neural Network to predict clothing from MNIST fashion dataset
 
 ## Fashion Examples (learning_rate=0.1, epochs=10)
 
-![Bild9](examples/fashion/coat_epoch_10.png) ![Bild10](examples/fashion/dress_epoch_10.png) ![Bild11](examples/fashion/sandal_epoch_10.png) ![Bild12](examples/fashion/shirt_epoch_10.png)
+![Bild9](examples/fashion/coat_epoch_10.png) ![Bild11](examples/fashion/sandal_epoch_10.png) ![Bild12](examples/fashion/shirt_epoch_10.png)
