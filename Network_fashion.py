@@ -10,6 +10,8 @@ from torchvision import datasets, transforms
 def view_classify(img, ps, version="Fashion"):
     ''' Function for viewing an image and it's predicted classes.
     '''
+    img = img.cpu()
+    ps = ps.cpu()
     ps = ps.data.numpy().squeeze()
 
     fig, (ax1, ax2) = plt.subplots(figsize=(6, 9), ncols=2)
@@ -60,6 +62,7 @@ def train_model(model_t, epochs_t, trainloader_t):
         loss_per_epoch = 0
         for images, labels in trainloader_t:
             # flatten to 1D vector to pass to network
+            images, labels = images.cuda(), labels.cuda()
             images = images.view(images.shape[0], -1)
 
             optimizer.zero_grad()
@@ -77,6 +80,7 @@ def train_model(model_t, epochs_t, trainloader_t):
 def predict(model_p, trainloader_p):
     data_iter = iter(trainloader_p)
     images, labels = next(data_iter)
+    images, labels = images.cuda(), labels.cuda()
     for i in range(15):
         img = images[i].view(1, 784)
         with torch.no_grad():
@@ -97,18 +101,20 @@ if __name__ == '__main__':
     test_set = datasets.FashionMNIST('~/.pytorch/F_MNIST_data/', download=True, train=False, transform=transform)
     test_loader = torch.utils.data.DataLoader(test_set, batch_size=64, shuffle=True)
 
-    model = setup_model()
+    model = setup_model().cuda()
 
     # negative log likelihood loss
     criterion = nn.NLLLoss()
 
     # statistic gradient descent
     # learning rate of 0.005
-    optimizer = optim.SGD(model.parameters(), lr=0.1)
+    optimizer = optim.Adam(model.parameters(), lr=0.005)
 
     # 5 training epochs
-    epochs = 10
+    epochs = 25
 
     model = train_model(model, epochs, train_loader)
+
+    torch.save(model, "model_fashion.pt")
 
     predict(model, test_loader)
