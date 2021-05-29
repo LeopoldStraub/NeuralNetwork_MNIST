@@ -4,6 +4,7 @@ import torch
 from matplotlib import pyplot as plt
 from torch import nn
 from torch import optim
+from torch.autograd import Variable
 from torchvision import datasets, transforms
 
 
@@ -45,16 +46,42 @@ def setup_model():
     # 3 hidden layers(128 neurons, 64 neurons and 32 neurons)
     # and an output layer with 10 neurons
     # each one indicating the probability of a clothing
-    model_s = nn.Sequential(
-        nn.Linear(784, 128),
-        nn.ReLU(),  # ReLu as linear activation function
-        nn.Linear(128, 64),
-        nn.ReLU(),
-        nn.Linear(64, 10),
-        nn.LogSoftmax(dim=1))
+    class Net(nn.Module):
+        def __init__(self):
+            super(Net, self).__init__()
+
+            self.layer1 = nn.Sequential(
+                nn.Conv2d(in_channels=1, out_channels=32, kernel_size=3, padding=1),
+                nn.BatchNorm2d(32),
+                nn.ReLU(),
+                nn.MaxPool2d(kernel_size=2, stride=2)
+            )
+
+            self.layer2 = nn.Sequential(
+                nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3),
+                nn.BatchNorm2d(64),
+                nn.ReLU(),
+                nn.MaxPool2d(2)
+            )
+
+            self.fc1 = nn.Linear(in_features=64 * 6 * 6, out_features=600)
+            self.drop = nn.Dropout2d(0.25)
+            self.fc2 = nn.Linear(in_features=600, out_features=120)
+            self.fc3 = nn.Linear(in_features=120, out_features=10)
+
+        def forward(self, x):
+            out = self.layer1(x)
+            out = self.layer2(out)
+            out = out.view(out.size(0), -1)
+            out = self.fc1(out)
+            out = self.drop(out)
+            out = self.fc2(out)
+            out = self.fc3(out)
+            return out
+
     # LogSoftmax as final activation to wrap the probabilities so they add up to 1
     # to get a nice probability distribution
-    return model_s
+    return Net()
 
 
 def train_model(model_t, epochs_t, trainloader_t):
@@ -63,7 +90,7 @@ def train_model(model_t, epochs_t, trainloader_t):
         for images, labels in trainloader_t:
             # flatten to 1D vector to pass to network
             images, labels = images.cuda(), labels.cuda()
-            images = images.view(images.shape[0], -1)
+            # images = images.view(images.shape[0], -1)
 
             optimizer.zero_grad()
             y = model_t(images)
@@ -82,7 +109,8 @@ def predict(model_p, trainloader_p):
     images, labels = next(data_iter)
     images, labels = images.cuda(), labels.cuda()
     for i in range(15):
-        img = images[i].view(1, 784)
+        # img = images[i].view(1, 784)
+        img = Variable(images[i])
         with torch.no_grad():
             log_pred = model_p(img)
         pred = torch.exp(log_pred)
@@ -104,17 +132,17 @@ if __name__ == '__main__':
     model = setup_model().cuda()
 
     # negative log likelihood loss
-    criterion = nn.NLLLoss()
+    criterion = nn.CrossEntropyLoss()
 
     # statistic gradient descent
     # learning rate of 0.005
     optimizer = optim.Adam(model.parameters(), lr=0.005)
 
     # 5 training epochs
-    epochs = 25
+    epochs = 2
 
     model = train_model(model, epochs, train_loader)
 
-    torch.save(model, "model_fashion.pt")
+    # torch.save(model, "model_fashion.pt")
 
     predict(model, test_loader)
