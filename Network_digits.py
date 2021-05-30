@@ -8,6 +8,8 @@ from matplotlib import pyplot as plt
 
 
 def view_classify(img, ps):
+    img = img.cpu()
+    ps = ps.cpu()
     ps = ps.data.numpy().squeeze()
     fig, (ax1, ax2) = plt.subplots(figsize=(6, 9), ncols=2)
     ax1.imshow(img.resize_(1, 28, 28).numpy().squeeze())
@@ -39,11 +41,14 @@ def setup_model():
     return model_s
 
 
-def train_model(model_t, epochs_t, trainloader_t):
+def train_model(model_t, epochs_t, trainloader_t, testloader_t):
     for e in range(epochs_t):
         loss_per_epoch = 0
+        test_loss = 0
+        model_t.train()
         for images, labels in trainloader_t:
             # flatten to 1D vector to pass to network
+            images, labels = images.cuda(), labels.cuda()
             images = images.view(images.shape[0], -1)
 
             optimizer.zero_grad()
@@ -53,14 +58,29 @@ def train_model(model_t, epochs_t, trainloader_t):
             optimizer.step()
 
             loss_per_epoch += loss.item()
-        else:
-            print("epoch " + str(e) + f" loss: {loss_per_epoch / len(trainloader_t)}")
+
+        model_t.eval()
+        for data, target in testloader_t:
+            data, target = data.cuda(), target.cuda()
+            data = data.view(data.shape[0], -1)
+            output = model_t(data)
+            loss = criterion(output, target)
+            test_loss += loss.item()*data.size(0)
+        loss_per_epoch = loss_per_epoch/len(trainloader_t)
+        test_loss = test_loss/(len(testloader_t))
+        print('Epoch: {} \tTraining Loss: {:.6f} \tValidation Loss: {:.6f}'.format(
+            e + 1,
+            loss_per_epoch,
+            test_loss
+        ))
+
     return model_t
 
 
 def predict(model_p, trainloader_p):
     data_iter = iter(trainloader_p)
     images, labels = next(data_iter)
+    images, labels = images.cuda(), labels.cuda()
     for i in range(15):
         img = images[i].view(1, 784)
         with torch.no_grad():
@@ -78,7 +98,10 @@ if __name__ == '__main__':
     train_set = datasets.MNIST('~/.pytorch/MNIST_data/', download=True, train=True, transform=transform)
     train_loader = torch.utils.data.DataLoader(train_set, batch_size=64, shuffle=True)
 
-    model = setup_model()
+    testset = datasets.MNIST('~/.pytorch/MNIST_data/', download=True, train=False, transform=transform)
+    testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=True)
+
+    model = setup_model().cuda()
 
     # negative log likelihood loss
     criterion = nn.NLLLoss()
@@ -88,8 +111,8 @@ if __name__ == '__main__':
     optimizer = optim.SGD(model.parameters(), lr=0.1)
 
     # 5 training epochs
-    epochs = 10
+    epochs = 2
 
-    model = train_model(model, epochs, train_loader)
+    model = train_model(model, epochs, train_loader, testloader)
 
     predict(model, train_loader)
