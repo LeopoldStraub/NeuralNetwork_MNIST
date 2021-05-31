@@ -42,6 +42,8 @@ def setup_model():
 
 
 def train_model(model_t, epochs_t, trainloader_t, testloader_t):
+    test_loss_min = np.Inf
+
     for e in range(epochs_t):
         loss_per_epoch = 0
         test_loss = 0
@@ -73,6 +75,12 @@ def train_model(model_t, epochs_t, trainloader_t, testloader_t):
             loss_per_epoch,
             test_loss
         ))
+        if test_loss <= test_loss_min:
+            print('Validation loss decreased ({:.6f} --> {:.6f}).  Saving model ...'.format(
+                test_loss_min,
+                test_loss))
+            torch.save(model_t.state_dict(), 'model_digits.pt')
+            test_loss_min = test_loss
 
     return model_t
 
@@ -111,7 +119,7 @@ if __name__ == '__main__':
     optimizer = optim.SGD(model.parameters(), lr=0.1)
 
     # 5 training epochs
-    epochs = 2
+    epochs = 10
 
     model = train_model(model, epochs, train_loader, testloader)
 
