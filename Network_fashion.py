@@ -52,14 +52,14 @@ def setup_model():
 
             self.layer1 = nn.Sequential(
                 nn.Conv2d(in_channels=1, out_channels=32, kernel_size=3, padding=1),
-                nn.BatchNorm2d(32),
+                # nn.BatchNorm2d(32),
                 nn.ReLU(),
                 nn.MaxPool2d(kernel_size=2, stride=2)
             )
 
             self.layer2 = nn.Sequential(
                 nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3),
-                nn.BatchNorm2d(64),
+                # nn.BatchNorm2d(64),
                 nn.ReLU(),
                 nn.MaxPool2d(2)
             )
@@ -107,14 +107,22 @@ def train_model(model_t, epochs_t, trainloader_t):
 def predict(model_p, trainloader_p):
     data_iter = iter(trainloader_p)
     images, labels = next(data_iter)
-    images, labels = images.cuda(), labels.cuda()
-    for i in range(15):
-        # img = images[i].view(1, 784)
-        img = Variable(images[i])
-        with torch.no_grad():
-            log_pred = model_p(img)
-        pred = torch.exp(log_pred)
-        view_classify(img.view(1, 28, 28), pred)
+
+    model_p = model_p.cpu()
+    output = model_p(images)
+    _, preds = torch.max(output, 1)
+    # prep images for display
+    images = images.numpy()
+
+    # plot the images in the batch, along with predicted and true labels
+    fig = plt.figure(figsize=(25, 4))
+    for idx in np.arange(20):
+        ax = fig.add_subplot(2, int(20 / 2), idx + 1, xticks=[], yticks=[])
+        ax.imshow(np.squeeze(images[idx]), cmap='gray')
+        ax.set_title("{} ({})".format(str(preds[idx].item()), str(labels[idx].item())),
+                     color=("green" if preds[idx] == labels[idx] else "red"))
+    plt.show()
+
 
 
 if __name__ == '__main__':
@@ -136,13 +144,15 @@ if __name__ == '__main__':
 
     # statistic gradient descent
     # learning rate of 0.005
-    optimizer = optim.Adam(model.parameters(), lr=0.005)
+    optimizer = optim.SGD(model.parameters(), lr=0.005)
 
     # 5 training epochs
-    epochs = 2
+    epochs = 5
 
     model = train_model(model, epochs, train_loader)
 
     # torch.save(model, "model_fashion.pt")
 
     predict(model, test_loader)
+
+    # torch.cuda.empty_cache()
