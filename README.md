@@ -13,6 +13,7 @@ Neural Network to predict handwritten digits from MNIST digit dataset
 
 # NeuralNetwork_MNIST_FASHION
 Neural Network to predict clothing from MNIST fashion dataset
+
 2 Convolutional Layers followed by 3 fully connected layers
 
 ## Fashion Examples (learning_rate=0.1, epochs=10)
