@@ -14,6 +14,10 @@ Neural Network to predict handwritten digits from MNIST digit dataset
 # NeuralNetwork_MNIST_FASHION
 Neural Network to predict clothing from MNIST fashion dataset
 
-## Fashion Examples (learning_rate=0.1, epochs=10)
+**2 Convolutional** Layers followed by **3 fully connected** layers
 
-![Bild9](examples/fashion/coat_epoch_10.png) ![Bild11](examples/fashion/sandal_epoch_10.png) ![Bild12](examples/fashion/shirt_epoch_10.png)
+## Fashion Examples (learning_rate=0.005, epochs=10, optimizer=Adam)
+random sample of predictions
+
+green == correct prediction // red == wrong prediction
+![sample_fashion](https://user-images.githubusercontent.com/42090755/120382365-d92feb00-c323-11eb-83d0-c4260bfc8f84.png)
