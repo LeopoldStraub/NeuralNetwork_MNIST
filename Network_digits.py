@@ -124,3 +124,5 @@ if __name__ == '__main__':
     model = train_model(model, epochs, train_loader, testloader)
 
     predict(model, train_loader)
+
+    torch.cuda.empty_cache()

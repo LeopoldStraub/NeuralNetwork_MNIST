@@ -84,9 +84,12 @@ def setup_model():
     return Net()
 
 
-def train_model(model_t, epochs_t, trainloader_t):
+def train_model(model_t, epochs_t, trainloader_t, test_loader_t):
+    test_loss_min = np.Inf
     for e in range(epochs_t):
         loss_per_epoch = 0
+        test_loss = 0
+        model_t.train()
         for images, labels in trainloader_t:
             # flatten to 1D vector to pass to network
             images, labels = images.cuda(), labels.cuda()
@@ -99,8 +102,26 @@ def train_model(model_t, epochs_t, trainloader_t):
             optimizer.step()
 
             loss_per_epoch += loss.item()
-        else:
-            print("epoch " + str(e) + f" loss: {loss_per_epoch / len(trainloader_t)}")
+
+        model_t.eval()
+        for data, target in test_loader_t:
+            data, target = data.cuda(), target.cuda()
+            output = model_t(data)
+            loss = criterion(output, target)
+            test_loss += loss.item() * data.size(0)
+        loss_per_epoch = loss_per_epoch / len(trainloader_t)
+        test_loss = test_loss / (len(test_loader_t))
+        print('Epoch: {} \tTraining Loss: {:.6f} \tValidation Loss: {:.6f}'.format(
+            e + 1,
+            loss_per_epoch,
+            test_loss
+        ))
+        if test_loss <= test_loss_min:
+            print('Validation loss decreased ({:.6f} --> {:.6f}).  Saving model ...'.format(
+                test_loss_min,
+                test_loss))
+            torch.save(model_t.state_dict(), 'model_fashion.pt')
+            test_loss_min = test_loss
     return model_t
 
 
@@ -114,15 +135,25 @@ def predict(model_p, trainloader_p):
     # prep images for display
     images = images.numpy()
 
+    category = ['T-shirt/top',
+                'Trouser',
+                'Pullover',
+                'Dress',
+                'Coat',
+                'Sandal',
+                'Shirt',
+                'Sneaker',
+                'Bag',
+                'Ankle Boot']
+
     # plot the images in the batch, along with predicted and true labels
     fig = plt.figure(figsize=(25, 4))
     for idx in np.arange(20):
         ax = fig.add_subplot(2, int(20 / 2), idx + 1, xticks=[], yticks=[])
         ax.imshow(np.squeeze(images[idx]), cmap='gray')
-        ax.set_title("{} ({})".format(str(preds[idx].item()), str(labels[idx].item())),
+        ax.set_title("{} ({})".format(str(category[preds[idx].item()]), str(category[labels[idx].item()])),
                      color=("green" if preds[idx] == labels[idx] else "red"))
     plt.show()
-
 
 
 if __name__ == '__main__':
@@ -139,20 +170,18 @@ if __name__ == '__main__':
 
     model = setup_model().cuda()
 
-    # negative log likelihood loss
+    # negative log likelihood loss + LogSoftmax
     criterion = nn.CrossEntropyLoss()
 
     # statistic gradient descent
     # learning rate of 0.005
-    optimizer = optim.SGD(model.parameters(), lr=0.005)
+    optimizer = optim.Adam(model.parameters(), lr=0.005)
 
     # 5 training epochs
-    epochs = 5
+    epochs = 10
 
-    model = train_model(model, epochs, train_loader)
-
-    # torch.save(model, "model_fashion.pt")
+    model = train_model(model, epochs, train_loader, test_loader)
 
     predict(model, test_loader)
 
-    # torch.cuda.empty_cache()
+    torch.cuda.empty_cache()
